@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Set {{ set.numeroSet }} - {{ set.nom }}{% endblock %}
+
+{% block body %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>🧱 Set {{ set.numeroSet }}</h1>
+        <a href="{{ path('gift_home') }}" class="btn">← Retour</a>
+    </div>
+</div>
+
+<div class="card">
+    {% if set.imageUrl %}
+        <div class="text-center mb-3">
+            <img src="{{ set.imageUrl }}" alt="{{ set.nom }}" style="max-width: 300px; height: auto; border-radius: 8px;">
+        </div>
+    {% endif %}
+    
+    <h2>{{ set.nom }}</h2>
+    
+    <div style="margin: 20px 0;">
+        <p><strong>Numéro :</strong> {{ set.numeroSet }}</p>
+        {% if set.theme %}
+            <p><strong>Thème :</strong> {{ set.theme }}</p>
+        {% endif %}
+        {% if set.annee %}
+            <p><strong>Année :</strong> {{ set.annee }}</p>
+        {% endif %}
+    </div>
+
+    <div class="text-center">
+        {% if set.owned %}
+            <div class="alert alert-danger">
+                <h3>🏠 Ce set est déjà possédé</h3>
+                <p>Cette personne possède déjà ce set dans sa collection. Choisissez-en un autre !</p>
+            </div>
+        {% elseif set.isReserved %}
+            <div class="alert alert-danger">
+                <h3>❌ Ce set est déjà réservé</h3>
+                <p>Quelqu'un d'autre a déjà réservé ce set. Choisissez-en un autre !</p>
+            </div>
+        {% else %}
+            <div class="alert alert-success">
+                <h3>✅ Ce set est disponible !</h3>
+                <p>Vous pouvez le réserver maintenant.</p>
+            </div>
+            
+            <form method="post" action="{{ path('gift_reserve', {id: set.id}) }}" style="margin-top: 20px;">
+                <div class="form-group">
+                    <label for="reserved_by">Votre prénom (optionnel) :</label>
+                    <input type="text" id="reserved_by" name="reserved_by" class="form-control" placeholder="Ex: Marie" style="max-width: 300px; margin: 0 auto;">
+                </div>
+                <button type="submit" class="btn btn-success" onclick="return confirm('Êtes-vous sûr de vouloir réserver ce set ?')">
+                    🎁 Réserver ce set
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

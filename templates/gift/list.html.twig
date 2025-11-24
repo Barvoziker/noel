@@ -1,0 +1,62 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des sets LEGO{% endblock %}
+
+{% block body %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>📦 Liste des sets LEGO</h1>
+        <a href="{{ path('gift_home') }}" class="btn">← Retour</a>
+    </div>
+    
+    <div class="mb-3">
+        <div style="margin-bottom: 10px;">
+            <strong>Filtres :</strong>
+            <a href="{{ path('gift_list') }}" class="btn {% if filter == 'all' %}btn-success{% endif %}" style="margin: 0 5px;">Tous les sets</a>
+            <a href="{{ path('gift_list', {filter: 'wanted'}) }}" class="btn {% if filter == 'wanted' %}btn-success{% endif %}" style="margin: 0 5px;">Sets souhaités</a>
+            <a href="{{ path('gift_list', {filter: 'available'}) }}" class="btn {% if filter == 'available' %}btn-success{% endif %}" style="margin: 0 5px;">Disponibles à offrir</a>
+        </div>
+        
+        {% if filter == 'all' %}
+            <span class="badge badge-info">Affichage : Tous les sets (possédés + souhaités)</span>
+        {% elseif filter == 'wanted' %}
+            <span class="badge badge-success">Affichage : Sets souhaités (non possédés)</span>
+        {% elseif filter == 'available' %}
+            <span class="badge badge-success">Affichage : Sets disponibles à offrir (souhaités + non réservés)</span>
+        {% endif %}
+    </div>
+</div>
+
+{% if sets is empty %}
+    <div class="card text-center">
+        <p>Aucun set trouvé.</p>
+    </div>
+{% else %}
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Numéro</th>
+                    <th>Nom</th>
+                    <th>Thème</th>
+                    <th>Année</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for set in sets %}
+                <tr>
+                    <td><strong>{{ set.numeroSet }}</strong></td>
+                    <td>{{ set.nom }}</td>
+                    <td>{{ set.theme ?? '-' }}</td>
+                    <td>{{ set.annee ?? '-' }}</td>
+                    <td>
+                        <span class="badge {{ set.statusBadgeClass }}">{{ set.statusLabel }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+{% endblock %}

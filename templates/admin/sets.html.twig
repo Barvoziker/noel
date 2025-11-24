@@ -1,0 +1,63 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Administration - Sets LEGO{% endblock %}
+
+{% block body %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>🔧 Administration - Sets LEGO</h1>
+        <a href="{{ path('admin_sets_new') }}" class="btn btn-success">+ Ajouter un set</a>
+    </div>
+    
+    <p><strong>🎁 Mode surprise activé :</strong> Vous ne voyez que vos sets possédés. Les réservations sont complètement masquées pour préserver la surprise !</p>
+</div>
+
+{% if sets is empty %}
+    <div class="card text-center">
+        <p>Aucun set dans la liste.</p>
+        <a href="{{ path('admin_sets_new') }}" class="btn btn-success">Ajouter le premier set</a>
+    </div>
+{% else %}
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Numéro</th>
+                    <th>Nom</th>
+                    <th>Thème</th>
+                    <th>Année</th>
+                    <th>Possédé</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for set in sets %}
+                <tr>
+                    <td><strong>{{ set.numeroSet }}</strong></td>
+                    <td>{{ set.nom }}</td>
+                    <td>{{ set.theme ?? '-' }}</td>
+                    <td>{{ set.annee ?? '-' }}</td>
+                    <td>
+                        {% if set.owned %}
+                            <span class="badge badge-info">✅ Oui</span>
+                        {% else %}
+                            <span class="badge badge-success">❌ Non</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ path('admin_sets_edit', {id: set.id}) }}" class="btn" style="padding: 5px 10px; margin-right: 5px;">Modifier</a>
+                        <form method="post" action="{{ path('admin_sets_delete', {id: set.id}) }}" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce set ?')">
+                            <button type="submit" class="btn btn-danger" style="padding: 5px 10px;">Supprimer</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+<div class="card text-center">
+    <a href="{{ path('gift_home') }}" class="btn">👁️ Voir la page publique</a>
+</div>
+{% endblock %}
