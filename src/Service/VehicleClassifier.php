@@ -65,7 +65,9 @@ final class VehicleClassifier
         'ducati', 'kawasaki', 'yamaha', 'harley-davidson', 'red bull racing', 'williams racing', 'kick sauber', 'haas f1',
         'batmobile', 'tumbler', 'delorean', 'ecto-1', 'speed racer', 'mach 5', 'formula 1', 'f1', 'formula e', 'nascar',
         'lightning mcqueen', 'monster jam', 'fast & furious', 'rolls-royce', 'bentley', 'maserati', 'shelby', 'vespa',
-        'back to the future', 'cybertruck', 'pontiac', 'cadillac', 'hummer', 'unimog', 'claas', 'john deere', 'jcb', 'caterpillar',
+        'back to the future', 'cybertruck',
+        // sport automobile (casques et objets de pilotes compris)
+        'senna', 'scuderia', 'f1 team', 'schumacher', 'hamilton', 'verstappen', 'leclerc', 'norris', 'piastri', 'alonso', 'pontiac', 'cadillac', 'hummer', 'unimog', 'claas', 'john deere', 'jcb', 'caterpillar',
     ];
 
     /** Évoque un véhicule mais reste vague : suffit seulement sans mot de contexte */

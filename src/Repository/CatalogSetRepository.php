@@ -61,12 +61,7 @@ class CatalogSetRepository extends ServiceEntityRepository
             $qb->andWhere('c.vehicle = true');
         }
 
-        $query = $query !== null ? trim($query) : '';
-        if ($query !== '') {
-            $qb->andWhere('LOWER(c.name) LIKE :q OR c.numero = :exact OR LOWER(c.themePath) LIKE :q')
-                ->setParameter('q', '%'.mb_strtolower(addcslashes($query, '%_')).'%')
-                ->setParameter('exact', SetNumber::normalize($query) ?? '');
-        }
+        TextSearch::apply($qb, $query, ['c.name', 'c.themePath'], 'c.numero');
         if ($rootTheme) {
             $qb->andWhere('c.rootTheme = :root')->setParameter('root', $rootTheme);
         }

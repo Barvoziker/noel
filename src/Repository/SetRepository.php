@@ -68,12 +68,7 @@ class SetRepository extends ServiceEntityRepository
                 break;
         }
 
-        $query = $query !== null ? trim($query) : '';
-        if ($query !== '') {
-            $qb->andWhere('LOWER(s.nom) LIKE :q OR LOWER(s.numeroSet) LIKE :q OR LOWER(s.theme) LIKE :q OR s.numeroSet = :exact')
-                ->setParameter('q', '%'.mb_strtolower(addcslashes($query, '%_')).'%')
-                ->setParameter('exact', SetNumber::normalize($query) ?? '');
-        }
+        TextSearch::apply($qb, $query, ['s.nom', 's.theme'], 's.numeroSet');
 
         if ($theme) {
             $qb->andWhere('s.theme = :theme')->setParameter('theme', $theme);

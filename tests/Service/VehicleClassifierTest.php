@@ -48,6 +48,7 @@ class VehicleClassifierTest extends TestCase
         yield 'Duplo Cars malgré Duplo exclu' => ['Mack at the Race', 506, 14, true];
         yield 'autre Duplo exclu' => ['Fire Truck', 507, 20, false];
         yield 'coffret sans pièces' => ['NEOM McLaren Racing Gift Set', 1, 0, true];
+        yield 'casque F1' => ['Ayrton Senna Helmet', 721, 931, true];
         yield 'Icons vaisseau' => ['Galaxy Explorer', 721, 1254, false];
         yield 'Icons vélo' => ['Road Bike', 721, 600, false];
         yield 'Star Wars' => ['Millennium Falcon', 171, 7541, false];
