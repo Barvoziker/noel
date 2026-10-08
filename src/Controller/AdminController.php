@@ -301,6 +301,30 @@ class AdminController extends AbstractController
         return $this->redirect($back.'#set-'.rawurlencode($numero));
     }
 
+    /**
+     * Retire un souhait depuis le catalogue (les sets possédés ne sont jamais supprimés ici).
+     */
+    #[Route('/catalogue/retirer', name: 'admin_catalog_remove', methods: ['POST'])]
+    public function catalogRemove(Request $request): Response
+    {
+        $back = $this->safeReferer($request, 'admin_catalog');
+        if (!$this->isCsrfTokenValid('catalog_add', $request->request->getString('_token'))) {
+            $this->addFlash('error', 'La page a expiré, réessaie.');
+
+            return $this->redirect($back);
+        }
+
+        $numero = SetNumber::normalize($request->request->getString('numero'));
+        $set = $this->setRepository->findOneByNumero($numero);
+        if ($set && !$set->isOwned() && !$this->isGiverSecret($set)) {
+            $this->em->remove($set);
+            $this->em->flush();
+            $this->addFlash('success', sprintf('« %s » retiré de tes souhaits.', $set->getNom()));
+        }
+
+        return $this->redirect($back.'#set-'.rawurlencode((string) $numero));
+    }
+
     #[Route('/catalogue/synchroniser', name: 'admin_catalog_sync', methods: ['POST'])]
     public function catalogSync(Request $request, CatalogSync $sync): Response
     {

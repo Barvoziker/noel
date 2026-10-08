@@ -31,7 +31,12 @@
                     <input type="hidden" name="_token" value="{{ csrf_token('catalog_add') }}">
                     <input type="hidden" name="numero" value="{{ item.numero }}">
                     <button class="btn btn-green btn-lg grow" name="owned" value="1">🏠 Je l'ai</button>
-                    {% if not mine %}<button class="btn btn-yellow btn-lg grow" name="owned" value="0">⭐ Je le veux</button>{% endif %}
+                    {% if mine %}
+                        <button class="btn btn-danger-ghost btn-lg grow" formaction="{{ path('admin_catalog_remove') }}"
+                                onclick="return confirm('Retirer « {{ item.name|e('js') }} » de tes souhaits ?')">✕ Retirer des souhaits</button>
+                    {% else %}
+                        <button class="btn btn-yellow btn-lg grow" name="owned" value="0">⭐ Je le veux</button>
+                    {% endif %}
                 </form>
             {% endif %}
             {% if mine %}
