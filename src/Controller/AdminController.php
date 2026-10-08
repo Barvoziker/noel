@@ -222,10 +222,10 @@ class AdminController extends AbstractController
     {
         $vehiclesOnly = $request->query->getString('tous') !== '1';
         $hideMine = $request->query->getBoolean('masquer');
-        $page = max(1, $request->query->getInt('page', 1));
+        $page = max(1, $this->queryInt($request, 'page') ?? 1);
         $sort = $request->query->getString('sort', 'recent');
-        $fromYear = $request->query->getInt('de') ?: null;
-        $toYear = $request->query->getInt('a') ?: null;
+        $fromYear = $this->queryInt($request, 'de');
+        $toYear = $this->queryInt($request, 'a');
         $q = $request->query->getString('q');
         $theme = $request->query->getString('theme') ?: null;
 
@@ -467,6 +467,17 @@ class AdminController extends AbstractController
     private function isGiverSecret(Set $set): bool
     {
         return $set->isAddedByGiver() && !$set->isOwned();
+    }
+
+    /**
+     * Entier facultatif de l'URL. Un champ de formulaire vide (« de= ») donne null,
+     * là où getInt() lèverait une erreur 400.
+     */
+    private function queryInt(Request $request, string $key): ?int
+    {
+        $value = trim($request->query->getString($key));
+
+        return ctype_digit($value) && (int) $value > 0 ? (int) $value : null;
     }
 
     private function safeReferer(Request $request, string $fallbackRoute = 'admin_sets'): string
