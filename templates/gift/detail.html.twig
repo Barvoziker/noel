@@ -1,61 +1,70 @@
 {% extends 'base.html.twig' %}
+{% import '_macros.html.twig' as m %}
 
-{% block title %}Set {{ set.numeroSet }} - {{ set.nom }}{% endblock %}
+{% block title %}{{ set.numeroSet }} · {{ set.nom }}{% endblock %}
 
 {% block body %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1>🧱 Set {{ set.numeroSet }}</h1>
-        <a href="{{ path('gift_home') }}" class="btn">← Retour</a>
-    </div>
-</div>
+{% set reveal = viewer.canSeeReservations %}
+{% set status = set.status(reveal) %}
+<div class="stack">
+    <a href="{{ path('gift_list') }}" class="btn btn-ghost btn-sm">← La liste</a>
 
-<div class="card">
-    {% if set.imageUrl %}
-        <div class="text-center mb-3">
-            <img src="{{ set.imageUrl }}" alt="{{ set.nom }}" style="max-width: 300px; height: auto; border-radius: 8px;">
-        </div>
-    {% endif %}
-    
-    <h2>{{ set.nom }}</h2>
-    
-    <div style="margin: 20px 0;">
-        <p><strong>Numéro :</strong> {{ set.numeroSet }}</p>
-        {% if set.theme %}
-            <p><strong>Thème :</strong> {{ set.theme }}</p>
-        {% endif %}
-        {% if set.annee %}
-            <p><strong>Année :</strong> {{ set.annee }}</p>
-        {% endif %}
-    </div>
+    <div class="detail">
+        <div class="detail-img">{{ m.image(set) }}</div>
 
-    <div class="text-center">
-        {% if set.owned %}
-            <div class="alert alert-danger">
-                <h3>🏠 Ce set est déjà possédé</h3>
-                <p>Cette personne possède déjà ce set dans sa collection. Choisissez-en un autre !</p>
-            </div>
-        {% elseif set.isReserved %}
-            <div class="alert alert-danger">
-                <h3>❌ Ce set est déjà réservé</h3>
-                <p>Quelqu'un d'autre a déjà réservé ce set. Choisissez-en un autre !</p>
-            </div>
-        {% else %}
-            <div class="alert alert-success">
-                <h3>✅ Ce set est disponible !</h3>
-                <p>Vous pouvez le réserver maintenant.</p>
-            </div>
-            
-            <form method="post" action="{{ path('gift_reserve', {id: set.id}) }}" style="margin-top: 20px;">
-                <div class="form-group">
-                    <label for="reserved_by">Votre prénom (optionnel) :</label>
-                    <input type="text" id="reserved_by" name="reserved_by" class="form-control" placeholder="Ex: Marie" style="max-width: 300px; margin: 0 auto;">
+        <div class="card">
+            <div class="row">{{ m.status_badge(set, reveal) }} {{ m.priority(set) }}</div>
+            <h1 class="mt">{{ set.nom }}</h1>
+
+            <dl class="facts">
+                <dt>Numéro</dt><dd class="mono">{{ set.numeroSet }}</dd>
+                {% if set.theme %}<dt>Thème</dt><dd>{{ set.theme }}</dd>{% endif %}
+                {% if set.annee %}<dt>Année</dt><dd>{{ set.annee }}</dd>{% endif %}
+                {% if set.pieces %}<dt>Pièces</dt><dd>{{ set.pieces|number_format(0, ',', ' ') }}</dd>{% endif %}
+                {% if set.prix and not set.owned %}<dt>Prix indicatif</dt><dd>≈ {{ m.price(set.prix) }}</dd>{% endif %}
+                {% if not set.owned %}<dt>Envie</dt><dd>{{ set.prioriteLabel }}</dd>{% endif %}
+            </dl>
+
+            {% if set.notes and not set.owned %}
+                <p class="note mb">💬 {{ set.notes }}</p>
+            {% endif %}
+
+            {% if status == 'owned' %}
+                <div class="status-box ko">
+                    <h3>🏠 {{ owner_name }} a déjà ce set</h3>
+                    <p>Pas de doublon : choisis-en un autre dans <a href="{{ path('gift_list') }}">la liste</a>.</p>
                 </div>
-                <button type="submit" class="btn btn-success" onclick="return confirm('Êtes-vous sûr de vouloir réserver ce set ?')">
-                    🎁 Réserver ce set
-                </button>
-            </form>
-        {% endif %}
+            {% elseif status == 'reserved' %}
+                <div class="status-box warn">
+                    <h3>🎁 Déjà réservé</h3>
+                    <p>Quelqu'un d'autre va l'offrir. <a href="{{ path('gift_list', {filter: 'available'}) }}">Voir les sets encore disponibles</a>.</p>
+                </div>
+            {% elseif viewer.isGiver %}
+                <div class="status-box ok">
+                    <h3>✅ Disponible</h3>
+                    <p>{{ owner_name }} ne l'a pas et personne ne l'a réservé.</p>
+                    <form method="post" action="{{ path('gift_reserve', {id: set.id}) }}" class="mt stack"
+                          data-confirm="Réserver « {{ set.nom }} » ? Les autres proches le verront comme réservé.">
+                        <input type="hidden" name="_token" value="{{ csrf_token('reserve' ~ set.id) }}">
+                        <div class="field">
+                            <label for="reserved_by">Ton prénom <small>(facultatif, jamais affiché)</small></label>
+                            <input type="text" id="reserved_by" name="reserved_by" class="input" maxlength="50" placeholder="Ex : Marie">
+                        </div>
+                        <button type="submit" class="btn btn-green btn-lg btn-block">🎁 Je réserve ce set</button>
+                    </form>
+                </div>
+            {% else %}
+                <div class="status-box info">
+                    <h3>⭐ Dans ta liste de souhaits</h3>
+                    <p>Les réservations te sont cachées pour garder la surprise.</p>
+                </div>
+            {% endif %}
+
+            <p class="row mt">
+                <a href="{{ set.legoUrl }}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Voir sur LEGO.com ↗</a>
+                <a href="{{ set.rebrickableUrl }}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Rebrickable ↗</a>
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}

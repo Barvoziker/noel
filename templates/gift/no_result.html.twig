@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Aucun résultat{% endblock %}
+
+{% block body %}
+<div class="stack">
+    <div class="card empty">
+        <span class="emoji">🤔</span>
+        <h2>Aucun set ne correspond à « {{ q }} »</h2>
+        <p class="mt">Avec le <strong>numéro</strong> du set (sur la boîte), tu sauras à coup sûr si {{ owner_name }} l'a déjà.</p>
+    </div>
+    <div class="card">{% include 'gift/_search.html.twig' with {q: ''} %}</div>
+</div>
+{% endblock %}

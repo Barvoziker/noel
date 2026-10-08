@@ -10,53 +10,29 @@ class AppFixtures extends Fixture
 {
     public function load(ObjectManager $manager): void
     {
+        // [numéro, nom, thème, année, pièces, possédé, prix, priorité, note]
         $sets = [
-            [
-                'numero_set' => '75302',
-                'nom' => 'Imperial Star Destroyer',
-                'theme' => 'Star Wars',
-                'annee' => 2020,
-                'image_url' => 'https://www.lego.com/cdn/cs/set/assets/blt77c0b3d0e4c3e5b5/75302.jpg'
-            ],
-            [
-                'numero_set' => '10497',
-                'nom' => 'Galaxy Explorer',
-                'theme' => 'Icons',
-                'annee' => 2022,
-                'image_url' => null
-            ],
-            [
-                'numero_set' => '21058',
-                'nom' => 'Great Pyramid of Giza',
-                'theme' => 'Architecture',
-                'annee' => 2022,
-                'image_url' => null
-            ],
-            [
-                'numero_set' => '60367',
-                'nom' => 'Passenger Airplane',
-                'theme' => 'City',
-                'annee' => 2023,
-                'image_url' => null
-            ],
-            [
-                'numero_set' => '31132',
-                'nom' => 'Viking Ship and the Midgard Serpent',
-                'theme' => 'Creator 3-in-1',
-                'annee' => 2022,
-                'image_url' => null
-            ]
+            ['75192', 'Millennium Falcon', 'Star Wars', 2017, 7541, false, '849.99', Set::PRIORITY_HIGH, 'Le rêve absolu, à se partager à plusieurs ?'],
+            ['42143', 'Ferrari Daytona SP3', 'Technic', 2022, 3778, false, '449.99', Set::PRIORITY_HIGH, null],
+            ['10497', 'Galaxy Explorer', 'Icons', 2022, 1254, false, '99.99', Set::PRIORITY_NORMAL, null],
+            ['21058', 'Great Pyramid of Giza', 'Architecture', 2022, 1476, false, '139.99', Set::PRIORITY_NORMAL, null],
+            ['31132', 'Viking Ship and the Midgard Serpent', 'Creator 3-in-1', 2022, 1192, false, '119.99', Set::PRIORITY_LOW, null],
+            ['75302', 'Imperial Shuttle', 'Star Wars', 2021, 660, true, '69.99', Set::PRIORITY_NORMAL, null],
+            ['60367', 'Passenger Airplane', 'City', 2023, 913, true, '99.99', Set::PRIORITY_NORMAL, null],
+            ['10294', 'Titanic', 'Icons', 2021, 9090, true, '679.99', Set::PRIORITY_NORMAL, null],
         ];
 
-        foreach ($sets as $setData) {
-            $set = new Set();
-            $set->setNumeroSet($setData['numero_set']);
-            $set->setNom($setData['nom']);
-            $set->setTheme($setData['theme']);
-            $set->setAnnee($setData['annee']);
-            $set->setImageUrl($setData['image_url']);
-            
-            $manager->persist($set);
+        foreach ($sets as [$numero, $nom, $theme, $annee, $pieces, $owned, $prix, $priorite, $notes]) {
+            $manager->persist((new Set())
+                ->setNumeroSet($numero)
+                ->setNom($nom)
+                ->setTheme($theme)
+                ->setAnnee($annee)
+                ->setPieces($pieces)
+                ->setOwned($owned)
+                ->setPrix($prix)
+                ->setPriorite($priorite)
+                ->setNotes($notes));
         }
 
         $manager->flush();

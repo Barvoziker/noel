@@ -1,0 +1,142 @@
+{% extends 'base.html.twig' %}
+{% import '_macros.html.twig' as m %}
+
+{% block title %}Tableau de bord{% endblock %}
+
+{% block body %}
+<div class="stack">
+    <section class="hero">
+        <h1>Salut {{ owner_name }} 👋</h1>
+        <p class="lead">Ta collection en un coup d'œil. Les réservations de tes proches restent invisibles ici : surprise garantie. 🤫</p>
+
+        <form method="get" action="{{ path('admin_sets_new') }}" class="mt">
+            <label for="numero" class="label">Ajout rapide : tape un numéro de set</label>
+            <div class="search-bar" style="margin-top:6px">
+                <input type="text" id="numero" name="numero" class="input" placeholder="Ex : 10497" required autocomplete="off" inputmode="numeric">
+                <button class="btn btn-green btn-lg" name="owned" value="1">🏠 Je l'ai</button>
+                <button class="btn btn-yellow btn-lg" name="owned" value="0">⭐ Je le veux</button>
+            </div>
+        </form>
+    </section>
+
+    <div class="stats">
+        <div class="stat" style="--c: var(--blue)">
+            <div class="value">{{ stats.owned }}</div>
+            <div class="label">sets possédés</div>
+        </div>
+        <div class="stat" style="--c: var(--yellow)">
+            <div class="value">{{ stats.wanted }}</div>
+            <div class="label">souhaits</div>
+        </div>
+        <div class="stat" style="--c: var(--red)">
+            <div class="value">{{ stats.pieces|number_format(0, ',', ' ') }}</div>
+            <div class="label">pièces dans ta collection</div>
+        </div>
+        <div class="stat" style="--c: var(--green)">
+            <div class="value">{{ stats.ownedValue ? m.price(stats.ownedValue) : '–' }}</div>
+            <div class="label">valeur estimée{% if stats.wantedValue %} · souhaits ≈ {{ m.price(stats.wantedValue) }}{% endif %}</div>
+        </div>
+    </div>
+
+    <div class="detail">
+        <div class="card">
+            <div class="row-between mb">
+                <h2 style="margin:0">⭐ Tes envies prioritaires</h2>
+                <a href="{{ path('admin_sets', {filter: 'wanted', sort: 'priorite'}) }}" class="btn btn-ghost btn-sm">Tout voir</a>
+            </div>
+            {% if topWanted is empty %}
+                <p class="muted">Aucun souhait. Ajoute des sets avec « Je le veux » pour guider tes proches.</p>
+            {% else %}
+                <ul class="list-plain">
+                    {% for set in topWanted %}
+                        <li class="row">
+                            <div class="thumb" style="width:56px;height:42px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--border)">{{ m.image(set, 'style="max-height:38px;width:auto"') }}</div>
+                            <a class="grow" href="{{ path('admin_sets_edit', {id: set.id}) }}"><strong>{{ set.nom }}</strong></a>
+                            {{ m.priority(set) }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>🧱 Tes thèmes préférés</h2>
+            {% if stats.themes is empty %}
+                <p class="muted">Renseigne le thème de tes sets pour voir la répartition.</p>
+            {% else %}
+                {% set max = stats.themes|first %}
+                <div class="bars">
+                    {% for theme, n in stats.themes %}
+                        <div class="bar-row">
+                            <span class="name" title="{{ theme }}">{{ theme }}</span>
+                            <span class="track"><span class="fill" style="display:block;width:{{ (n / max * 100)|round }}%"></span></span>
+                            <span class="n">{{ n }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if catalogEmpty %}
+        <div class="alert alert-info">📚 Télécharge le catalogue Rebrickable depuis la page <a href="{{ path('admin_catalog') }}">Catalogue</a> : remplissage automatique et suggestions de véhicules, sans clé API.</div>
+    {% elseif news is not empty %}
+        <section>
+            <div class="row-between mb">
+                <h2>🏎 Dernières sorties que tu n'as pas</h2>
+                <a href="{{ path('admin_catalog', {masquer: 1}) }}" class="btn btn-ghost btn-sm">Tout le catalogue →</a>
+            </div>
+            <div class="set-grid">
+                {% for c in news %}
+                    <div class="set-card">
+                        <div class="set-thumb">{% if c.imgUrl %}<img src="{{ c.imgUrl }}" alt="{{ c.name }}" loading="lazy" referrerpolicy="no-referrer" data-fallback>{% endif %}</div>
+                        <div class="set-body">
+                            <span class="set-num">{{ c.numero }}</span>
+                            <span class="set-name">{{ c.name }}</span>
+                            <span class="set-meta"><span>{{ c.theme }}</span><span>{{ c.year }}</span></span>
+                            <form method="post" action="{{ path('admin_catalog_add') }}" class="row" style="margin-top:10px;gap:6px">
+                                <input type="hidden" name="_token" value="{{ csrf_token('catalog_add') }}">
+                                <input type="hidden" name="numero" value="{{ c.numero }}">
+                                <button class="btn btn-green btn-sm grow" name="owned" value="1">🏠 Je l'ai</button>
+                                <button class="btn btn-yellow btn-sm grow" name="owned" value="0">⭐ Je le veux</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if recent is not empty %}
+        <section>
+            <div class="row-between mb">
+                <h2>Derniers ajouts</h2>
+                <a href="{{ path('admin_sets', {sort: 'recent'}) }}" class="btn btn-ghost btn-sm">Tous mes sets →</a>
+            </div>
+            <div class="set-grid">
+                {% for set in recent %}
+                    {{ m.set_card(set, false, path('admin_sets_edit', {id: set.id})) }}
+                {% endfor %}
+            </div>
+        </section>
+    {% else %}
+        <div class="card empty">
+            <span class="emoji">📦</span>
+            Ta collection est vide.
+            <div class="mt row" style="justify-content:center">
+                <a class="btn btn-green" href="{{ path('admin_sets_new') }}">Ajouter un set</a>
+                <a class="btn btn-ghost" href="{{ path('admin_import') }}">Importer une liste</a>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card row-between">
+        <div>
+            <strong>Partage ta liste</strong><br>
+            <span class="muted">Envoie ce lien à tes proches :</span>
+            <code id="share-url">{{ url('gift_home') }}</code>
+        </div>
+        <button type="button" class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('share-url').textContent).then(() => this.textContent = '✓ Copié')">📋 Copier le lien</button>
+    </div>
+</div>
+{% endblock %}

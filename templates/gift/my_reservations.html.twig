@@ -1,0 +1,71 @@
+{% extends 'base.html.twig' %}
+{% import '_macros.html.twig' as m %}
+
+{% block title %}Mes réservations{% endblock %}
+
+{% block body %}
+<div class="stack">
+    <h1>Mes réservations</h1>
+
+    {% for item in items|filter(item => item.reservation.anonymousId == new) %}
+        <div class="card text-center" style="border: 3px solid var(--green)">
+            <h2>🎉 C'est réservé !</h2>
+            <p class="mt">« {{ item.reservation.set.nom }} » apparaît maintenant comme réservé pour les autres proches.</p>
+            <p class="mt">Ton code d'annulation, utile si tu changes d'avis depuis un autre appareil :</p>
+            <p class="mt"><span class="code-box">{{ item.code }}</span></p>
+            <p class="muted mt">Sur ce navigateur, tu retrouveras toujours tes réservations ici.</p>
+        </div>
+    {% endfor %}
+
+    {% if lost > 0 %}
+        <p class="alert alert-warning">⚠ {{ lost > 1 ? lost ~ ' sets que tu avais réservés ont été retirés' : 'Un set que tu avais réservé a été retiré' }} de la liste par {{ owner_name }}.</p>
+    {% endif %}
+
+    {% if items is empty %}
+        <div class="card empty">
+            <span class="emoji">🎁</span>
+            Aucune réservation depuis ce navigateur.
+            <div class="mt"><a class="btn btn-green" href="{{ path('gift_list', {filter: 'available'}) }}">Trouver un cadeau</a></div>
+        </div>
+    {% else %}
+        <div class="card table-wrap">
+            <table class="table">
+                <thead><tr><th></th><th>Set</th><th class="hide-sm">Réservé le</th><th>Code</th><th></th></tr></thead>
+                <tbody>
+                {% for item in items %}
+                    {% set set = item.reservation.set %}
+                    <tr>
+                        <td><div class="thumb">{{ m.image(set) }}</div></td>
+                        <td>
+                            <a href="{{ path('gift_detail', {numero: set.numeroSet}) }}"><strong>{{ set.nom }}</strong></a><br>
+                            <span class="set-num">{{ set.numeroSet }}</span>
+                            {% if set.owned %}<br><span class="badge badge-reserved">⚠ {{ owner_name }} l'a eu entre-temps</span>{% endif %}
+                            {% if set.addedByGiver and not set.owned %}<br><small>Hors liste, ajouté par toi</small>{% endif %}
+                        </td>
+                        <td class="hide-sm">{{ item.reservation.reservedAt|date('d/m/Y') }}</td>
+                        <td class="mono">{{ item.code }}</td>
+                        <td>
+                            <form method="post" action="{{ path('gift_cancel') }}" class="inline" data-confirm="Annuler la réservation de « {{ set.nom }} » ?">
+                                <input type="hidden" name="_token" value="{{ csrf_token('cancel') }}">
+                                <input type="hidden" name="reservation" value="{{ item.reservation.anonymousId }}">
+                                <button class="btn btn-danger-ghost btn-sm">Annuler</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
+    <details class="help">
+        <summary>Tu as réservé depuis un autre appareil ?</summary>
+        <form method="post" action="{{ path('gift_cancel') }}" class="row" data-confirm="Annuler cette réservation ?">
+            <input type="hidden" name="_token" value="{{ csrf_token('cancel') }}">
+            <input type="text" name="numero" class="input" placeholder="Numéro du set" required style="max-width:200px">
+            <input type="text" name="code" class="input mono" placeholder="Code (ex : K7P-2QX)" required style="max-width:200px">
+            <button class="btn btn-red">Annuler la réservation</button>
+        </form>
+    </details>
+</div>
+{% endblock %}

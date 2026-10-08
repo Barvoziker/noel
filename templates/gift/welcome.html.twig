@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Bienvenue{% endblock %}
+
+{% block body %}
+<section class="hero">
+    <h1>Un cadeau LEGO pour {{ owner_name }} ? 🎁</h1>
+    <p class="lead">
+        {{ owner_name }} collectionne {{ collection_focus }}.
+        Ici, tu peux vérifier en quelques secondes s'il possède déjà un set,
+        et réserver ton cadeau pour que personne d'autre ne l'achète.
+    </p>
+
+    <div class="choice-grid">
+        <a class="choice" href="{{ path('gift_role', {role: 'proche'}) }}">
+            <span class="emoji">🎁</span>
+            <strong>Je veux offrir un cadeau</strong>
+            <span class="muted">Voir la liste, vérifier un numéro et réserver un set.</span>
+        </a>
+        <a class="choice" href="{{ path('gift_role', {role: 'proprietaire'}) }}">
+            <span class="emoji">🧱</span>
+            <strong>Je suis {{ owner_name }}</strong>
+            <span class="muted">Gérer ma collection. Les réservations te resteront cachées : surprise garantie.</span>
+        </a>
+    </div>
+</section>
+{% endblock %}

@@ -4,7 +4,6 @@ namespace App\Entity;
 
 use App\Repository\ReservationRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ReservationRepository::class)]
 #[ORM\Table(name: 'reservations')]
@@ -16,7 +15,7 @@ class Reservation
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Set::class)]
+    #[ORM\ManyToOne(targetEntity: Set::class, inversedBy: 'reservations')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Set $set = null;
 
@@ -28,6 +27,10 @@ class Reservation
 
     #[ORM\Column(length: 50)]
     private string $anonymousId;
+
+    /** Hash du code d'annulation remis au proche qui réserve */
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $cancelCodeHash = null;
 
     public function __construct()
     {
@@ -80,6 +83,17 @@ class Reservation
     public function setAnonymousId(string $anonymousId): static
     {
         $this->anonymousId = $anonymousId;
+        return $this;
+    }
+
+    public function getCancelCodeHash(): ?string
+    {
+        return $this->cancelCodeHash;
+    }
+
+    public function setCancelCodeHash(?string $cancelCodeHash): static
+    {
+        $this->cancelCodeHash = $cancelCodeHash;
         return $this;
     }
 }

@@ -1,0 +1,51 @@
+{% macro image(set, attr = '') %}
+    {%- set src = set.displayImage -%}
+    {%- if src -%}
+        <img src="{{ src }}" alt="{{ set.nom }}" loading="lazy" referrerpolicy="no-referrer" data-fallback {{ attr }}>
+    {%- else -%}
+        <div class="img-fallback" role="img" aria-label="{{ set.nom }}"></div>
+    {%- endif -%}
+{% endmacro %}
+
+{# reveal = false : on ne montre jamais si le set est réservé #}
+{% macro status_badge(set, reveal) %}
+    {%- set status = set.status(reveal) -%}
+    {%- if status == 'owned' -%}
+        <span class="badge badge-owned">🏠 Déjà possédé</span>
+    {%- elseif status == 'reserved' -%}
+        <span class="badge badge-reserved">🎁 Réservé</span>
+    {%- elseif reveal -%}
+        <span class="badge badge-available">✓ Disponible</span>
+    {%- else -%}
+        <span class="badge badge-wanted">⭐ Souhaité</span>
+    {%- endif -%}
+{% endmacro %}
+
+{% macro priority(set) %}
+    {%- if not set.owned and set.priorite == 1 -%}
+        <span class="badge badge-prio prio" title="{{ set.prioriteLabel }}">❤ Très envie</span>
+    {%- endif -%}
+{% endmacro %}
+
+{% macro price(value) %}{{ value is not null ? (value|number_format(value == value|round ? 0 : 2, ',', ' ') ~ ' €') : '' }}{% endmacro %}
+
+{% macro set_card(set, reveal, href) %}
+    {%- import _self as m -%}
+    {%- set status = set.status(reveal) -%}
+    <a class="set-card is-{{ status }}" href="{{ href }}">
+        <div class="set-thumb">
+            {{ m.image(set) }}
+            {{ m.status_badge(set, reveal) }}
+            {{ m.priority(set) }}
+        </div>
+        <div class="set-body">
+            <span class="set-num">{{ set.numeroSet }}</span>
+            <span class="set-name">{{ set.nom }}</span>
+            <span class="set-meta">
+                {% if set.theme %}<span>{{ set.theme }}</span>{% endif %}
+                {% if set.pieces %}<span>{{ set.pieces|number_format(0, ',', ' ') }} pièces</span>{% endif %}
+                {% if set.prix and not set.owned %}<span>≈ {{ m.price(set.prix) }}</span>{% endif %}
+            </span>
+        </div>
+    </a>
+{% endmacro %}

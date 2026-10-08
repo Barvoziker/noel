@@ -2,44 +2,63 @@
 
 namespace App\Service;
 
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+
 class ReservationHashService
 {
-    private string $secretKey;
+    // Sans 0/O/1/I/L pour éviter les erreurs de recopie
+    private const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
-    public function __construct()
-    {
-        // Utilise une clé secrète pour le hashage
-        $this->secretKey = $_ENV['APP_SECRET'] ?? 'default-secret-key';
+    public function __construct(
+        #[Autowire('%kernel.secret%')]
+        private readonly string $secretKey,
+    ) {
     }
 
     /**
-     * Hash les données de réservation pour masquer l'identité
+     * Hash le prénom pour qu'il ne soit lisible par personne, même en base.
      */
     public function hashReservationData(?string $reservedBy): ?string
     {
+        $reservedBy = $reservedBy !== null ? trim($reservedBy) : null;
         if (!$reservedBy) {
             return null;
         }
 
-        // Hash avec timestamp pour éviter les collisions
-        $timestamp = time();
-        return hash('sha256', $this->secretKey . $reservedBy . $timestamp);
+        return hash_hmac('sha256', mb_strtolower($reservedBy), $this->secretKey);
     }
 
-    /**
-     * Génère un identifiant anonyme pour la réservation
-     */
     public function generateAnonymousId(): string
     {
-        return 'gift_' . bin2hex(random_bytes(8));
+        return 'gift_'.bin2hex(random_bytes(8));
     }
 
     /**
-     * Vérifie si une réservation existe sans révéler d'informations
+     * Code court à recopier (ex : K7P-2QX), utilisé pour annuler une réservation.
      */
-    public function isReservationValid(string $hashedData): bool
+    public function generateCancelCode(): string
     {
-        // Simple vérification que le hash n'est pas vide
-        return !empty($hashedData) && strlen($hashedData) === 64;
+        $code = '';
+        $max = strlen(self::CODE_ALPHABET) - 1;
+        for ($i = 0; $i < 6; ++$i) {
+            $code .= self::CODE_ALPHABET[random_int(0, $max)];
+        }
+
+        return substr($code, 0, 3).'-'.substr($code, 3);
+    }
+
+    public function hashCancelCode(string $code): string
+    {
+        return hash_hmac('sha256', self::normalizeCode($code), $this->secretKey);
+    }
+
+    public function isCancelCodeValid(string $code, ?string $hash): bool
+    {
+        return $hash !== null && hash_equals($hash, $this->hashCancelCode($code));
+    }
+
+    private static function normalizeCode(string $code): string
+    {
+        return preg_replace('/[^A-Z0-9]/', '', strtoupper($code));
     }
 }

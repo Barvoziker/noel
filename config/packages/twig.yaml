@@ -1,5 +1,9 @@
 twig:
     file_name_pattern: '*.twig'
+    globals:
+        owner_name: '%app.owner_name%'
+        collection_focus: '%app.collection_focus%'
+        viewer: '@App\Service\Viewer'
 
 when@test:
     twig:

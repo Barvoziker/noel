@@ -8,7 +8,7 @@ security:
             memory:
                 users:
                     admin:
-                        password: '$2y$13$yKufndLeYhwfBaHiRgceYObtaQE19uV5/j782dyc16IivGkLs8x9K' # admin123
+                        password: '%env(ADMIN_PASSWORD_HASH)%'
                         roles: ['ROLE_ADMIN']
     firewalls:
         dev:

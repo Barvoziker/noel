@@ -1,165 +1,130 @@
-# 🎁 Liste de Noël LEGO
+# 🧱 Collection LEGO
 
-Application Symfony pour éviter les doublons de cadeaux LEGO à Noël.
+Application Symfony pour gérer ma collection LEGO et éviter qu'on m'offre des sets en double.
+
+- **Moi** : je renseigne les sets que j'ai et ceux que je veux.
+- **Mes proches** : ils vérifient si j'ai déjà un set et le réservent, pour qu'aucun autre ne l'achète.
+- **La surprise est préservée** : je ne vois jamais ce qui a été réservé.
 
 ## 🎯 Fonctionnalités
 
-### Pour toi (admin)
-- **Gestion des sets** : Ajouter, modifier, supprimer des sets LEGO
-- **Marquer comme possédé** : Cocher les sets que tu as déjà dans ta collection
-- **Vue d'ensemble** : Voir tous les sets et leur statut (possédé/réservé/disponible)
-- **Confidentialité** : Tu ne vois pas qui a réservé quoi
+### Pour les proches (`/gift/`)
+- **Vérification instantanée** par numéro (`42143`, `#42143`, `42143-1`, `Set 42143`) ou par nom.
+- **Set absent de la liste** : la réponse est claire (« Mathis ne l'a pas, tu peux l'offrir »). Le proche peut le réserver *hors liste* : les autres le verront réservé, le propriétaire ne verra rien.
+- **Liste en grille avec images** : filtres (à offrir, souhaits, possédés), thème, tri par envie ou par prix.
+- **Fiche détaillée** : pièces, prix indicatif, niveau d'envie, note du propriétaire, liens LEGO.com et Rebrickable.
+- **Réservation en un clic** avec un **code d'annulation** (ex. `K7P-2QX`).
+- **« Mes réservations »** : retrouve et annule ses réservations depuis ce navigateur, ou depuis un autre appareil avec le code.
+- **Alerte** si le propriétaire a obtenu le set entre-temps.
+- **Avertissement** si le set vérifié n'est pas un véhicule : le propriétaire ne collectionne que ça.
 
-### Pour tes proches
-- **Recherche par numéro** : Saisir un numéro de set pour vérifier sa disponibilité
-- **Filtres intelligents** : Voir les sets disponibles à offrir, souhaités, ou tous
-- **Évite les doublons** : Les sets possédés sont clairement marqués
-- **Réservation simple** : Réserver un set disponible en un clic
-- **Anonymat** : Pas besoin de compte, réservation anonyme
+### Pour le propriétaire (`/admin/`)
+- **Tableau de bord** : nombre de sets possédés et souhaités, pièces, valeur estimée, thèmes préférés, derniers ajouts, lien de partage à copier.
+- **Ajout rapide** : on tape un numéro, puis « Je l'ai » ou « Je le veux ».
+- **Catalogue véhicules** : les ~2 000 sets voitures et véhicules motorisés existants (sur ~28 500), filtrables par thème, année et nom, à ajouter en un clic (« Je l'ai » ou « Je le veux »).
+- **Dernières sorties que tu n'as pas** sur le tableau de bord.
+- **Remplissage automatique** (nom, thème, année, pièces, image) depuis le catalogue local, sans clé API.
+- **Niveau d'envie** (❤ très envie, envie, bonus), prix indicatif et note pour les proches.
+- **« 🎉 Je l'ai ! »** en un clic pour passer un souhait en possédé.
+- **Import** en masse (texte ou CSV) et **export CSV**, réimportable tel quel.
+- **Zéro spoiler** : aucune réservation n'est visible, ni ici, ni sur les pages publiques.
+
+### Comment la surprise est protégée
+| Visiteur | Comment il est reconnu | Voit les réservations ? |
+|---|---|---|
+| Propriétaire | Cookie posé automatiquement dès qu'il passe par `/admin` | ❌ Jamais, même sur les pages publiques |
+| Proche | Clique « Je veux offrir un cadeau » à la première visite | ✅ |
+
+Un set ajouté hors liste par un proche reste invisible pour le propriétaire tant qu'il ne le possède pas. Si le propriétaire ajoute plus tard ce même numéro, la fiche est reprise sans rien révéler.
 
 ## 🚀 Installation
 
-### Prérequis
-- PHP 8.2+
-- PostgreSQL
-- Composer
+Prérequis : PHP 8.2+, PostgreSQL et Composer.
 
-### Configuration
-1. **Base de données** : Assure-toi que PostgreSQL est démarré et que la DB `lego_list` existe
-2. **Variables d'environnement** : Le fichier `.env` est déjà configuré pour `postgresql://mathisbuchet:@127.0.0.1:5432/lego_list`
-
-### Démarrage
 ```bash
-# Installer les dépendances
 composer install
 
-# Créer les tables (si pas encore fait)
-php bin/console doctrine:schema:update --force
+# Configuration locale (non commitée)
+cp .env .env.local   # puis adapter DATABASE_URL, OWNER_NAME, etc.
 
-# Charger des données d'exemple (optionnel)
+php bin/console doctrine:database:create --if-not-exists
+php bin/console doctrine:migrations:migrate
+
+# Catalogue Rebrickable (~5 s, à relancer chaque semaine, ou bouton « Mettre à jour » dans l'admin)
+php bin/console app:catalog:sync
+
+# Données d'exemple (optionnel, efface la base !)
 php bin/console doctrine:fixtures:load
 
-# Démarrer le serveur
-symfony serve
-# ou
-php -S localhost:8000 -t public/
+symfony serve        # ou : php -S localhost:8000 -t public/
 ```
 
-## 🔐 Accès
+### Variables d'environnement (`.env.local`)
+| Variable | Rôle |
+|---|---|
+| `DATABASE_URL` | Connexion PostgreSQL |
+| `OWNER_NAME` | Prénom affiché aux proches (« Mathis a déjà ce set ») |
+| `ADMIN_PASSWORD_HASH` | Hash du mot de passe admin, généré avec `php bin/console security:hash-password`. **Entre guillemets simples.** |
+| `COLLECTION_FOCUS` | Ce que tu collectionnes, affiché aux proches (défaut : « les voitures et véhicules motorisés ») |
+| `REBRICKABLE_API_KEY` | Facultatif. Clé gratuite sur [rebrickable.com/api](https://rebrickable.com/api/), utilisée seulement pour un set sorti depuis la dernière synchro du catalogue |
 
-### Pages publiques (tes proches)
-- **Accueil** : `/gift/` - Recherche et navigation
-- **Tous les sets** : `/gift/list` - Liste complète (possédés + souhaités)
-- **Sets souhaités** : `/gift/list?filter=wanted` - Seulement les non-possédés
-- **Disponibles à offrir** : `/gift/list?filter=available` - Souhaités + non réservés
+Identifiant admin : `admin`. Sans `ADMIN_PASSWORD_HASH` dans `.env.local`, le mot de passe est `admin123` : **change-le** avant de mettre l'appli en ligne, et sers-la en HTTPS, car l'authentification HTTP Basic envoie le mot de passe en clair sur HTTP.
 
-### Administration (toi)
-- **URL** : `/admin/`
-- **Identifiants** : `admin` / `admin123`
-- **Authentification** : HTTP Basic (popup du navigateur)
+## 🏎 Catalogue et détection des véhicules
 
-## 📊 Structure des données
+Rebrickable publie chaque jour son catalogue complet en CSV, accessible librement ([rebrickable.com/downloads](https://rebrickable.com/downloads/)). `app:catalog:sync` le recopie dans la table `catalog_sets`. Contrairement à l'API (limitée à environ 1 requête/s, avec un risque de bannissement), il n'y a aucune limite.
 
-### Table `sets`
-- `numero_set` : Numéro LEGO officiel (ex: 75302) - **unique**
-- `nom` : Nom du set
-- `theme` : Thème LEGO (Star Wars, City, etc.)
-- `annee` : Année de sortie
-- `image_url` : URL de l'image (optionnel)
-- `owned` : Booléen - true si tu possèdes déjà ce set
+`VehicleClassifier` décide si un set est un véhicule terrestre motorisé :
+- **Thèmes 100 % véhicules** (Speed Champions, Racers, City > Traffic…) : tout est retenu.
+- **Ailleurs** (Technic, Icons, licences…) : le nom doit citer un type de véhicule (truck, excavator, motorcycle…) ou une marque (Ferrari, Porsche, Batmobile…).
+- **Toujours exclus** : avions, hélicoptères, bateaux, vaisseaux, vélos, trains, ainsi que les produits dérivés (livres, porte-clés, Duplo…).
 
-### Table `reservations`
-- `set_id` : Référence vers le set - **unique** (un set = une réservation max)
-- `reserved_at` : Date/heure de réservation
-- `reserved_by` : Prénom (optionnel, invisible partout)
+Pour ajuster le tri, il suffit de modifier les listes de mots dans `src/Service/VehicleClassifier.php`, puis de relancer la synchro.
 
-## 🔍 Comment trouver le numéro d'un set LEGO ?
+## 📥 Format d'import
 
-### 📦 Sur la boîte physique
-- **Emplacement** : Coin supérieur droit de la boîte
-- **Format** : 4-5 chiffres (ex: 75192, 42143)
-- **Variantes** : Parfois précédé de "Set" ou "#"
+Un set par ligne, séparateur `;` (ou tabulation) :
 
-### 🌐 En ligne
-- **Site officiel** : LEGO.com → dans l'URL du produit
-- **Revendeurs** : Amazon, Fnac, etc. → fiche produit
-- **Communauté** : Brickset.com, Rebrickable.com
+```
+numéro;nom;thème;année;possédé
+42143
+75192;Millennium Falcon;Star Wars;2017;oui
+10497;Galaxy Explorer;Icons;2022;non
+```
 
-### 🎯 Exemples concrets
-- **75192** - Millennium Falcon UCS
-- **10497** - Galaxy Explorer  
-- **21058** - Grande Pyramide de Gizeh
-- **42143** - Ferrari Daytona SP3
-- **60367** - Avion de passagers
+Seul le numéro est obligatoire. Si le nom manque et qu'une clé Rebrickable est configurée, les infos sont récupérées automatiquement.
 
-### 💡 Astuces
-- Le numéro est **unique** pour chaque set
-- Les sets récents ont souvent 5 chiffres
-- Les sets anciens peuvent avoir 4 chiffres
-- Ignore les lettres ou symboles autour
+## 📊 Données
 
-## 🎮 Utilisation
+**`sets`** : `numero_set` (unique, normalisé), `nom`, `theme`, `annee`, `pieces`, `prix`, `priorite` (1 à 3), `notes`, `image_url` (facultatif : l'image Rebrickable sert de repli), `owned`, `owned_at`, `added_by_giver`, `created_at`.
 
-### Ajouter des sets (admin)
-1. Va sur `/admin/`
-2. Connecte-toi avec `admin` / `admin123`
-3. Clique "Ajouter un set"
-4. Remplis au minimum le numéro et le nom
-5. **Coche "Je possède déjà ce set"** si c'est dans ta collection
-
-### Réserver un set (proches)
-1. Va sur `/gift/`
-2. Tape un numéro de set ou clique "Voir la liste complète"
-3. Si le set est dispo, clique "Réserver ce set"
-4. Optionnel : laisse ton prénom (invisible pour l'admin)
-
-## 🔒 Sécurité & Confidentialité
-
-- **Admin** : Protégé par HTTP Basic Auth
-- **Public** : Accès libre, pas de compte requis
-- **Mode surprise total** : L'admin ne voit AUCUNE information de réservation
-- **Données hashées** : Les prénoms sont hashés en base de données
-- **Identifiants anonymes** : Chaque réservation a un ID anonyme unique
-- **Contraintes** : Un set ne peut être réservé qu'une seule fois
+**`reservations`** : `set_id` (unique, une réservation par set), `reserved_at`, `anonymous_id`, `cancel_code_hash` (HMAC du code d'annulation), `reserved_by_hash` (HMAC du prénom, jamais affiché).
 
 ## 🛠️ Développement
 
-### Commandes utiles
 ```bash
-# Vider le cache
-php bin/console cache:clear
-
-# Créer une nouvelle entité
-php bin/console make:entity
-
-# Créer une migration
-php bin/console make:migration
-
-# Exécuter les migrations
+php bin/phpunit                               # tests
+php bin/console make:migration                # après une modif d'entité
 php bin/console doctrine:migrations:migrate
-
-# Recharger les fixtures
-php bin/console doctrine:fixtures:load --purge-with-truncate
+php bin/console lint:twig templates
 ```
 
-### Structure du projet
 ```
 src/
 ├── Controller/
-│   ├── AdminController.php    # CRUD admin (/admin/*)
-│   └── GiftController.php     # Pages publiques (/gift/*)
-├── Entity/
-│   ├── Set.php               # Entité Set LEGO
-│   └── Reservation.php       # Entité Réservation
-└── Repository/
-    └── SetRepository.php     # Requêtes personnalisées
-
-templates/
-├── admin/                    # Templates admin
-├── gift/                     # Templates publics
-└── base.html.twig           # Template de base avec CSS
+│   ├── AdminController.php        # /admin : tableau de bord, CRUD, import/export, lookup
+│   └── GiftController.php         # /gift : recherche, liste, réservation, annulation
+├── Command/CatalogSyncCommand.php # app:catalog:sync
+├── Entity/                        # Set, Reservation, CatalogSet
+├── EventSubscriber/
+│   └── OwnerCookieSubscriber.php  # marque le navigateur du propriétaire
+├── Repository/SetRepository.php   # recherche, filtres, statistiques
+└── Service/
+    ├── CatalogSync.php            # téléchargement du catalogue Rebrickable
+    ├── LegoCatalog.php            # infos d'un set : catalogue local, puis API
+    ├── VehicleClassifier.php      # véhicule ou pas ?
+    ├── ReservationHashService.php # codes d'annulation, hash
+    ├── SetNumber.php              # normalisation des numéros
+    └── Viewer.php                 # qui regarde ? (propriétaire / proche)
+templates/                         # Twig ; styles dans assets/styles/app.css
 ```
-
-## 🎄 Bon Noël !
-
-L'app est prête à l'emploi. Tes proches peuvent maintenant vérifier et réserver des sets sans risque de doublon, et tu gardes la surprise ! 🎁

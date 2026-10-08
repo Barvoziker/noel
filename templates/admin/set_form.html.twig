@@ -1,69 +1,164 @@
 {% extends 'base.html.twig' %}
+{% import '_macros.html.twig' as m %}
 
 {% block title %}{{ title }}{% endblock %}
 
 {% block body %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1>{{ title }}</h1>
-        <a href="{{ path('admin_sets') }}" class="btn">← Retour à la liste</a>
+<div class="stack">
+    <a href="{{ path('admin_sets') }}" class="btn btn-ghost btn-sm">← Mes sets</a>
+
+    <div class="detail">
+        <div class="detail-img" id="preview">{{ m.image(set) }}</div>
+
+        <form method="post" class="card stack" id="set-form">
+            <h1>{{ title }}</h1>
+            <input type="hidden" name="_token" value="{{ csrf_token('set_form') }}">
+
+            <div class="field">
+                <label for="numero_set">Numéro du set *</label>
+                <div class="row">
+                    <input type="text" id="numero_set" name="numero_set" class="input grow mono" value="{{ set.numeroSet }}" placeholder="Ex : 75302" required autofocus autocomplete="off">
+                    {% if catalogEnabled %}
+                        <button type="button" class="btn btn-yellow" id="lookup-btn">✨ Remplir</button>
+                    {% endif %}
+                </div>
+                <small id="lookup-msg">
+                    {% if catalogEnabled %}Tape le numéro puis « Remplir » : nom, thème, année, pièces et image arrivent tout seuls.
+                    {% else %}Astuce : télécharge le <a href="{{ path('admin_catalog') }}">catalogue</a> pour tout remplir automatiquement.{% endif %}
+                </small>
+            </div>
+
+            <div class="field">
+                <span class="label">Statut</span>
+                <div class="segmented">
+                    <label><input type="radio" name="owned" value="1" {{ set.owned ? 'checked' }}><span>🏠 Je l'ai</span></label>
+                    <label><input type="radio" name="owned" value="0" {{ not set.owned ? 'checked' }}><span>⭐ Je le veux</span></label>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="nom">Nom *</label>
+                <input type="text" id="nom" name="nom" class="input" value="{{ set.nom }}" placeholder="Ex : Imperial Star Destroyer" required maxlength="255">
+            </div>
+
+            <div class="form-grid">
+                <div class="field">
+                    <label for="theme">Thème</label>
+                    <input type="text" id="theme" name="theme" class="input" value="{{ set.theme }}" placeholder="Ex : Star Wars" list="themes" maxlength="100">
+                </div>
+                <div class="field">
+                    <label for="annee">Année</label>
+                    <input type="number" id="annee" name="annee" class="input" value="{{ set.annee }}" placeholder="Ex : 2024" min="1949" max="2100">
+                </div>
+                <div class="field">
+                    <label for="pieces">Pièces</label>
+                    <input type="number" id="pieces" name="pieces" class="input" value="{{ set.pieces }}" min="0">
+                </div>
+                <div class="field">
+                    <label for="prix">Prix indicatif (€)</label>
+                    <input type="text" id="prix" name="prix" class="input" value="{{ set.prix }}" inputmode="decimal" placeholder="Ex : 129,99">
+                </div>
+            </div>
+
+            <fieldset class="stack" id="wish-fields" style="border:0">
+                <div class="field">
+                    <span class="label">À quel point tu le veux ?</span>
+                    <div class="segmented">
+                        {% for value, label in constant('App\\Entity\\Set::PRIORITY_LABELS') %}
+                            <label><input type="radio" name="priorite" value="{{ value }}" {{ set.priorite == value ? 'checked' }}><span>{{ value == 1 ? '❤ ' }}{{ label }}</span></label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="notes">Note pour tes proches</label>
+                    <textarea id="notes" name="notes" class="input" maxlength="1000" placeholder="Ex : la version 2024, pas celle de 2019">{{ set.notes }}</textarea>
+                </div>
+            </fieldset>
+
+            <div class="field">
+                <label for="image_url">Image <small>(facultatif, sinon l'image Rebrickable est utilisée)</small></label>
+                <input type="url" id="image_url" name="image_url" class="input" value="{{ set.imageUrl }}" placeholder="https://…">
+            </div>
+
+            <div class="row">
+                <button type="submit" class="btn btn-green btn-lg">💾 Enregistrer</button>
+                {% if not set.id %}
+                    <button type="submit" name="add_another" value="1" class="btn btn-ghost btn-lg">Enregistrer et en ajouter un autre</button>
+                {% endif %}
+            </div>
+        </form>
     </div>
 </div>
+{% endblock %}
 
-<div class="card">
-    <form method="post">
-        <div class="form-group">
-            <label for="numero_set">Numéro du set LEGO * :</label>
-            <input type="text" id="numero_set" name="numero_set" class="form-control" 
-                   value="{{ set.numeroSet ?? '' }}" placeholder="Ex: 75302" required>
-        </div>
+{% block javascripts %}
+<script>
+(function () {
+    var form = document.getElementById('set-form');
+    var numero = document.getElementById('numero_set');
+    var preview = document.getElementById('preview');
+    var msg = document.getElementById('lookup-msg');
+    var btn = document.getElementById('lookup-btn');
+    var wish = document.getElementById('wish-fields');
+    var lookupUrl = {{ path('admin_lookup', {numero: '__N__'})|json_encode|raw }};
 
-        <div class="form-group">
-            <label for="nom">Nom du set * :</label>
-            <input type="text" id="nom" name="nom" class="form-control" 
-                   value="{{ set.nom ?? '' }}" placeholder="Ex: Imperial Star Destroyer" required>
-        </div>
+    function normalize(v) { return v.trim().toLowerCase().replace(/^(set|#|n°)\s*/, '').replace(/\s+/g, '').replace(/-1$/, ''); }
 
-        <div class="form-group">
-            <label for="theme">Thème :</label>
-            <input type="text" id="theme" name="theme" class="form-control" 
-                   value="{{ set.theme ?? '' }}" placeholder="Ex: Star Wars">
-        </div>
+    function showImage(src) {
+        if (!src) return;
+        preview.innerHTML = '';
+        var img = document.createElement('img');
+        img.src = src; img.alt = ''; img.referrerPolicy = 'no-referrer'; img.dataset.fallback = '';
+        preview.appendChild(img);
+    }
 
-        <div class="form-group">
-            <label for="annee">Année :</label>
-            <input type="number" id="annee" name="annee" class="form-control" 
-                   value="{{ set.annee ?? '' }}" placeholder="Ex: 2023" min="1950" max="2030">
-        </div>
+    // Les champs « priorité » et « note » n'ont de sens que pour un souhait
+    function syncWish() {
+        var owned = form.querySelector('input[name=owned]:checked');
+        wish.hidden = owned && owned.value === '1';
+    }
+    form.querySelectorAll('input[name=owned]').forEach(function (r) { r.addEventListener('change', syncWish); });
+    syncWish();
 
-        <div class="form-group">
-            <label for="image_url">URL de l'image :</label>
-            <input type="url" id="image_url" name="image_url" class="form-control" 
-                   value="{{ set.imageUrl ?? '' }}" placeholder="https://...">
-        </div>
+    // Aperçu de l'image Rebrickable dès qu'on tape un numéro
+    numero.addEventListener('change', function () {
+        var n = normalize(numero.value);
+        if (n && !document.getElementById('image_url').value) {
+            showImage('https://cdn.rebrickable.com/media/sets/' + encodeURIComponent(n.indexOf('-') > -1 ? n : n + '-1') + '.jpg');
+        }
+    });
 
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="owned" name="owned" value="1" 
-                       {% if set.owned %}checked{% endif %}>
-                🏠 Je possède déjà ce set
-            </label>
-            <small style="display: block; color: #666; margin-top: 5px;">
-                Cocher si tu as déjà ce set dans ta collection
-            </small>
-        </div>
-
-        <div class="text-center">
-            <button type="submit" class="btn btn-success">💾 Enregistrer</button>
-            <a href="{{ path('admin_sets') }}" class="btn" style="margin-left: 10px;">Annuler</a>
-        </div>
-    </form>
-</div>
-
-{% if set.imageUrl %}
-<div class="card text-center">
-    <h3>Aperçu de l'image :</h3>
-    <img src="{{ set.imageUrl }}" alt="{{ set.nom }}" style="max-width: 300px; height: auto; border-radius: 8px;">
-</div>
-{% endif %}
+    if (!btn) return;
+    function lookup() {
+        var n = normalize(numero.value);
+        if (!n) { numero.focus(); return; }
+        btn.disabled = true; msg.textContent = 'Recherche…';
+        fetch(lookupUrl.replace('__N__', encodeURIComponent(n)), { headers: { Accept: 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.existing && {{ set.id ? 'false' : 'true' }}) {
+                    msg.innerHTML = '⚠ Déjà dans ta collection : <a href="' + data.existing.editUrl + '">' + data.existing.nom + '</a>';
+                }
+                if (!data.found) {
+                    if (!data.existing) msg.textContent = 'Set introuvable sur Rebrickable : remplis les champs à la main.';
+                    return;
+                }
+                var s = data.set;
+                document.getElementById('nom').value = s.nom || '';
+                document.getElementById('theme').value = s.theme || '';
+                document.getElementById('annee').value = s.annee || '';
+                document.getElementById('pieces').value = s.pieces || '';
+                document.getElementById('image_url').value = s.imageUrl || '';
+                showImage(s.imageUrl);
+                if (!data.existing) msg.textContent = '✓ ' + s.nom + ' trouvé !' + (s.vehicle ? '' : ' ⚠ Ce n\'est pas un véhicule.');
+            })
+            .catch(function () { msg.textContent = 'Recherche impossible pour le moment.'; })
+            .finally(function () { btn.disabled = false; });
+    }
+    btn.addEventListener('click', lookup);
+    numero.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !document.getElementById('nom').value) { e.preventDefault(); lookup(); }
+    });
+})();
+</script>
 {% endblock %}

@@ -1,63 +1,97 @@
 {% extends 'base.html.twig' %}
+{% import '_macros.html.twig' as m %}
 
-{% block title %}Administration - Sets LEGO{% endblock %}
+{% block title %}Mes sets{% endblock %}
 
 {% block body %}
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1>🔧 Administration - Sets LEGO</h1>
-        <a href="{{ path('admin_sets_new') }}" class="btn btn-success">+ Ajouter un set</a>
+<div class="stack">
+    <div class="row-between">
+        <h1>Mes sets <small>({{ sets|length }})</small></h1>
+        <div class="row">
+            <a href="{{ path('admin_export') }}" class="btn btn-ghost">⬇ Export CSV</a>
+            <a href="{{ path('admin_sets_new') }}" class="btn btn-green">+ Ajouter un set</a>
+        </div>
     </div>
-    
-    <p><strong>🎁 Mode surprise activé :</strong> Vous ne voyez que vos sets possédés. Les réservations sont complètement masquées pour préserver la surprise !</p>
-</div>
 
-{% if sets is empty %}
-    <div class="card text-center">
-        <p>Aucun set dans la liste.</p>
-        <a href="{{ path('admin_sets_new') }}" class="btn btn-success">Ajouter le premier set</a>
-    </div>
-{% else %}
-    <div class="card">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Numéro</th>
-                    <th>Nom</th>
-                    <th>Thème</th>
-                    <th>Année</th>
-                    <th>Possédé</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
+    <nav class="chips" aria-label="Filtres">
+        {% for key, label in {all: 'Tous', owned: '🏠 Possédés', wanted: '⭐ Souhaits'} %}
+            <a class="chip {{ filter == key ? 'active' }}" href="{{ path('admin_sets', {filter: key, q: q ?: null, theme: theme, sort: sort}) }}">{{ label }}</a>
+        {% endfor %}
+    </nav>
+
+    <form method="get" class="toolbar card card-tight">
+        <input type="hidden" name="filter" value="{{ filter }}">
+        <input type="search" name="q" value="{{ q }}" class="input" placeholder="Rechercher…" aria-label="Rechercher">
+        <select name="theme" class="select" aria-label="Thème">
+            <option value="">Tous les thèmes</option>
+            {% for t in themes %}<option value="{{ t }}" {{ t == theme ? 'selected' }}>{{ t }}</option>{% endfor %}
+        </select>
+        <select name="sort" class="select" aria-label="Trier">
+            {% for key, label in {numero: 'Numéro', nom: 'Nom', recent: 'Derniers ajouts', annee: 'Année', prix: 'Prix', priorite: 'Priorité'} %}
+                <option value="{{ key }}" {{ key == sort ? 'selected' }}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn">Appliquer</button>
+    </form>
+
+    {% if sets is empty %}
+        <div class="card empty">
+            <span class="emoji">📦</span>
+            {{ q or theme ? 'Aucun set ne correspond.' : 'Aucun set pour le moment.' }}
+            <div class="mt"><a class="btn btn-green" href="{{ path('admin_sets_new') }}">Ajouter un set</a></div>
+        </div>
+    {% else %}
+        <div class="card table-wrap" style="padding:8px">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Set</th>
+                        <th class="hide-sm">Thème</th>
+                        <th class="hide-sm">Année</th>
+                        <th>Statut</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
                 {% for set in sets %}
-                <tr>
-                    <td><strong>{{ set.numeroSet }}</strong></td>
-                    <td>{{ set.nom }}</td>
-                    <td>{{ set.theme ?? '-' }}</td>
-                    <td>{{ set.annee ?? '-' }}</td>
-                    <td>
-                        {% if set.owned %}
-                            <span class="badge badge-info">✅ Oui</span>
-                        {% else %}
-                            <span class="badge badge-success">❌ Non</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{{ path('admin_sets_edit', {id: set.id}) }}" class="btn" style="padding: 5px 10px; margin-right: 5px;">Modifier</a>
-                        <form method="post" action="{{ path('admin_sets_delete', {id: set.id}) }}" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce set ?')">
-                            <button type="submit" class="btn btn-danger" style="padding: 5px 10px;">Supprimer</button>
-                        </form>
-                    </td>
-                </tr>
+                    <tr>
+                        <td><div class="thumb">{{ m.image(set) }}</div></td>
+                        <td>
+                            <a href="{{ path('admin_sets_edit', {id: set.id}) }}"><strong>{{ set.nom }}</strong></a>
+                            {{ m.priority(set) }}<br>
+                            <span class="set-num">{{ set.numeroSet }}</span>
+                            {% if set.pieces %}<small> · {{ set.pieces|number_format(0, ',', ' ') }} pcs</small>{% endif %}
+                        </td>
+                        <td class="hide-sm">{{ set.theme ?? '–' }}</td>
+                        <td class="hide-sm">{{ set.annee ?? '–' }}</td>
+                        <td>
+                            <form method="post" action="{{ path('admin_sets_toggle_owned', {id: set.id}) }}" class="inline">
+                                <input type="hidden" name="_token" value="{{ csrf_token('toggle' ~ set.id) }}">
+                                <button class="toggle-owned" title="{{ set.owned ? 'Repasser en souhait' : 'Je l\'ai eu !' }}">{{ m.status_badge(set, false) }}</button>
+                            </form>
+                        </td>
+                        <td>
+                            <div class="actions">
+                                {% if not set.owned %}
+                                    <form method="post" action="{{ path('admin_sets_toggle_owned', {id: set.id}) }}" class="inline">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('toggle' ~ set.id) }}">
+                                        <button class="btn btn-green btn-sm">🎉 Je l'ai !</button>
+                                    </form>
+                                {% endif %}
+                                <a href="{{ path('admin_sets_edit', {id: set.id}) }}" class="btn btn-ghost btn-sm">Modifier</a>
+                                <form method="post" action="{{ path('admin_sets_delete', {id: set.id}) }}" class="inline" data-confirm="Supprimer « {{ set.nom }} » ?">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ set.id) }}">
+                                    <button class="btn btn-danger-ghost btn-sm" aria-label="Supprimer {{ set.nom }}">🗑</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
                 {% endfor %}
-            </tbody>
-        </table>
-    </div>
-{% endif %}
-
-<div class="card text-center">
-    <a href="{{ path('gift_home') }}" class="btn">👁️ Voir la page publique</a>
+                </tbody>
+            </table>
+        </div>
+        <p class="muted">Astuce : clique sur un statut pour basculer entre « possédé » et « souhaité ».</p>
+    {% endif %}
 </div>
 {% endblock %}

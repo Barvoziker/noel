@@ -1,67 +1,44 @@
 {% extends 'base.html.twig' %}
+{% import '_macros.html.twig' as m %}
 
-{% block title %}Recherche de sets LEGO{% endblock %}
+{% block title %}Accueil{% endblock %}
 
 {% block body %}
-<div class="card text-center">
-    <h1>🎁 Liste de Noël LEGO</h1>
-    <p>Recherchez un set LEGO par son numéro pour vérifier sa disponibilité</p>
-</div>
+<div class="stack">
+    <section class="hero">
+        {% if viewer.isOwner %}
+            <h1>Ta liste, vue par tes proches</h1>
+            <p class="lead">Mode propriétaire : les réservations sont masquées, la surprise est préservée. 🤫</p>
+        {% else %}
+            <h1>Tu cherches un cadeau pour {{ owner_name }} ?</h1>
+            <p class="lead">{{ owner_name }} collectionne <strong>{{ collection_focus }}</strong>. Vérifie qu'il n'a pas déjà le set, puis réserve-le pour éviter les doublons.</p>
+        {% endif %}
+        <div class="mt">{% include 'gift/_search.html.twig' %}</div>
+    </section>
 
-<div class="card">
-    <h2>🔍 Rechercher un set par numéro</h2>
-    
-    <div style="margin-bottom: 20px;">
-        <button onclick="toggleGuide()" class="btn" style="width: 100%; text-align: left; background: #f8f9fa; color: #495057; border: 1px solid #dee2e6;">
-            <span id="guide-icon">▶️</span> <strong>💡 Comment trouver le numéro d'un set LEGO ?</strong>
-        </button>
-        
-        <div id="guide-content" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 0 0 8px 8px; border: 1px solid #dee2e6; border-top: none;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 15px 0;" class="grid-mobile">
-                <div>
-                    <h4 style="color: #007bff; margin-bottom: 8px;">📦 Sur la boîte</h4>
-                    <ul style="margin: 0; padding-left: 20px;">
-                        <li>Coin supérieur droit de la boîte</li>
-                        <li>Format : 4-5 chiffres (ex: <strong>42143</strong>)</li>
-                        <li>Parfois précédé de "Set" ou "#"</li>
-                    </ul>
-                </div>
-                
-                <div>
-                    <h4 style="color: #28a745; margin-bottom: 8px;">🌐 En ligne</h4>
-                    <ul style="margin: 0; padding-left: 20px;">
-                        <li>Site officiel LEGO.com</li>
-                        <li>Dans l'URL du produit</li>
-                        <li>Fiche produit des revendeurs</li>
-                    </ul>
-                </div>
+    {% if highlights is not empty %}
+        <section>
+            <div class="row-between mb">
+                <h2>{{ viewer.isGiver ? 'Idées encore disponibles' : 'Ses envies du moment' }}
+                    <small>({{ availableCount }})</small></h2>
+                <a href="{{ path('gift_list') }}" class="btn btn-ghost btn-sm">Voir toute la liste →</a>
             </div>
-            
-            <div style="background: white; padding: 12px; border-radius: 6px; border-left: 4px solid #17a2b8;">
-                <strong>🎯 Exemples de numéros :</strong><br>
-                • <strong>75192</strong> - Millennium Falcon UCS<br>
-                • <strong>10497</strong> - Galaxy Explorer<br>
-                • <strong>21058</strong> - Grande Pyramide de Gizeh
+            <div class="set-grid">
+                {% for set in highlights %}
+                    {{ m.set_card(set, viewer.canSeeReservations, path('gift_detail', {numero: set.numeroSet})) }}
+                {% endfor %}
             </div>
+        </section>
+    {% else %}
+        <div class="card empty">
+            <span class="emoji">🎉</span>
+            {% if viewer.isGiver %}
+                Tous les sets de la liste sont déjà réservés ou possédés.<br>
+                Tu peux quand même vérifier un numéro au-dessus : s'il n'est pas dans sa collection, tu pourras le réserver.
+            {% else %}
+                Aucun souhait pour le moment.
+            {% endif %}
         </div>
-    </div>
-    
-    <form method="post" action="{{ path('gift_search') }}">
-        <div class="form-group">
-            <label for="numero_set">Numéro du set LEGO :</label>
-            <input type="text" id="numero_set" name="numero_set" class="form-control" placeholder="Ex: 42143" required>
-            <small style="color: #666;">Tape le numéro à 4-5 chiffres du set</small>
-        </div>
-        <button type="submit" class="btn btn-success">🔍 Rechercher ce set</button>
-    </form>
-</div>
-
-<div class="card text-center">
-    <h3>Ou parcourir la liste</h3>
-    <a href="{{ path('gift_list', {filter: 'available'}) }}" class="btn btn-success">🎁 Sets disponibles à offrir</a>
-    <br><br>
-    <a href="{{ path('gift_list', {filter: 'wanted'}) }}" class="btn">📋 Tous les sets souhaités</a>
-    <br><br>
-    <a href="{{ path('gift_list') }}" class="btn">📦 Liste complète (possédés + souhaités)</a>
+    {% endif %}
 </div>
 {% endblock %}

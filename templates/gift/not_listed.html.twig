@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Set {{ numero }}{% endblock %}
+
+{% block body %}
+<div class="stack">
+    <a href="{{ path('gift_home') }}" class="btn btn-ghost btn-sm">← Nouvelle recherche</a>
+
+    <div class="detail">
+        <div class="detail-img">
+            <img src="{{ info.imageUrl ?? imageUrl }}" alt="Set {{ numero }}" referrerpolicy="no-referrer" data-fallback>
+        </div>
+
+        <div class="card">
+            <span class="badge badge-available">Pas dans la collection</span>
+            <h1 class="mt">{{ info.nom ?? ('Set ' ~ numero) }}</h1>
+            <dl class="facts">
+                <dt>Numéro</dt><dd class="mono">{{ numero }}</dd>
+                {% if info.themePath ?? false %}<dt>Thème</dt><dd>{{ info.themePath }}</dd>{% endif %}
+                {% if info.annee ?? false %}<dt>Année</dt><dd>{{ info.annee }}</dd>{% endif %}
+                {% if info.pieces ?? false %}<dt>Pièces</dt><dd>{{ info.pieces|number_format(0, ',', ' ') }}</dd>{% endif %}
+            </dl>
+
+            {% if info and not info.vehicle %}
+                <div class="status-box warn mb">
+                    <h3>⚠ Ce n'est pas un véhicule</h3>
+                    <p>{{ owner_name }} collectionne uniquement {{ collection_focus }}. Ce set risque de moins lui plaire :
+                       <a href="{{ path('gift_list', {filter: viewer.isGiver ? 'available' : 'wanted'}) }}">voir plutôt ses envies</a>.</p>
+                </div>
+            {% endif %}
+
+            {% if viewer.isGiver %}
+                <div class="status-box ok">
+                    <h3>✅ {{ owner_name }} ne possède pas ce set</h3>
+                    <p>Il n'est pas dans la liste de souhaits, mais tu peux l'offrir sans risque de doublon.
+                       Réserve-le pour que les autres proches ne l'achètent pas aussi : <strong>{{ owner_name }} ne le verra pas.</strong></p>
+
+                    <form method="post" action="{{ path('gift_offer_unlisted') }}" class="mt stack">
+                        <input type="hidden" name="_token" value="{{ csrf_token('offer_unlisted') }}">
+                        <input type="hidden" name="numero" value="{{ numero }}">
+                        {% if not info %}
+                            <div class="field">
+                                <label for="nom">Nom du set <small>(pour que les autres le reconnaissent)</small></label>
+                                <input type="text" id="nom" name="nom" class="input" required maxlength="255" placeholder="Ex : Ferrari Daytona SP3">
+                            </div>
+                        {% endif %}
+                        <div class="field">
+                            <label for="reserved_by">Ton prénom <small>(facultatif, jamais affiché)</small></label>
+                            <input type="text" id="reserved_by" name="reserved_by" class="input" maxlength="50">
+                        </div>
+                        <button class="btn btn-green btn-lg btn-block">🎁 Je l'offre et je le réserve</button>
+                    </form>
+                </div>
+                <p class="muted mt">Vérifie bien le numéro sur la boîte : <a href="https://rebrickable.com/sets/{{ numero|url_encode }}-1/" target="_blank" rel="noopener">voir ce set sur Rebrickable ↗</a></p>
+            {% else %}
+                <div class="status-box info">
+                    <h3>Ce set n'est pas dans ta collection</h3>
+                    <p><a href="{{ path('admin_sets_new', {numero: numero}) }}">L'ajouter à ma collection ou à mes souhaits →</a></p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

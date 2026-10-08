@@ -1,0 +1,15 @@
+<form method="get" action="{{ path('gift_search') }}" role="search">
+    <label for="q" class="label">Numéro ou nom du set</label>
+    <div class="search-bar mt" style="margin-top:6px">
+        <input type="search" id="q" name="q" class="input" placeholder="Ex : 42143 ou Ferrari" value="{{ q ?? '' }}" required autocomplete="off" inputmode="search">
+        <button type="submit" class="btn btn-lg">🔍 Vérifier</button>
+    </div>
+</form>
+<details class="help mt">
+    <summary>💡 Où trouver le numéro d'un set ?</summary>
+    <ul class="steps">
+        <li><strong>Sur la boîte</strong> : en haut à droite ou sur la tranche, 4 à 6 chiffres (ex : <span class="mono">42143</span>).</li>
+        <li><strong>En magasin ou en ligne</strong> : dans le nom ou l'URL du produit (LEGO.com, Amazon, Fnac…).</li>
+        <li>« 42143-1 », « #42143 » ou « Set 42143 » fonctionnent aussi.</li>
+    </ul>
+</details>

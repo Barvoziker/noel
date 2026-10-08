@@ -1,0 +1,100 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Catalogue véhicules{% endblock %}
+
+{% block body %}
+{% set vehiclesOnly = filters.tous is null %}
+<div class="stack">
+    <div class="row-between">
+        <div>
+            <h1>{{ vehiclesOnly ? '🏎 Catalogue véhicules' : 'Catalogue complet' }}</h1>
+            <p class="muted">
+                {% if summary.total %}
+                    {{ total|number_format(0, ',', ' ') }} set{{ total > 1 ? 's' }} · source Rebrickable ({{ summary.vehicles|number_format(0, ',', ' ') }} véhicules sur {{ summary.total|number_format(0, ',', ' ') }} sets, jusqu'à {{ summary.latestYear }})
+                {% else %}
+                    Le catalogue est vide.
+                {% endif %}
+            </p>
+        </div>
+        <form method="post" action="{{ path('admin_catalog_sync') }}" data-confirm="Télécharger la dernière version du catalogue Rebrickable (quelques secondes) ?">
+            <input type="hidden" name="_token" value="{{ csrf_token('catalog_sync') }}">
+            <button class="btn btn-ghost">🔄 {{ summary.total ? 'Mettre à jour' : 'Télécharger le catalogue' }}</button>
+        </form>
+    </div>
+
+    {% if summary.total == 0 %}
+        <div class="card empty">
+            <span class="emoji">📚</span>
+            Clique sur « Télécharger le catalogue » pour récupérer tous les sets LEGO existants (gratuit, sans clé API).
+        </div>
+    {% else %}
+        <nav class="chips" aria-label="Thèmes">
+            <a class="chip {{ filters.theme is null ? 'active' }}" href="{{ path('admin_catalog', filters|merge({theme: null, page: null})) }}">Tous</a>
+            {% for name, n in themes|slice(0, 12, true) %}
+                <a class="chip {{ filters.theme == name ? 'active' }}" href="{{ path('admin_catalog', filters|merge({theme: name, page: null})) }}">{{ name }} <span class="count">{{ n }}</span></a>
+            {% endfor %}
+        </nav>
+
+        <form method="get" class="toolbar card card-tight">
+            <input type="search" name="q" value="{{ filters.q }}" class="input" placeholder="Ferrari, 42143, camion…" aria-label="Rechercher">
+            <select name="theme" class="select" aria-label="Thème">
+                <option value="">Tous les thèmes</option>
+                {% for name, n in themes %}<option value="{{ name }}" {{ filters.theme == name ? 'selected' }}>{{ name }} ({{ n }})</option>{% endfor %}
+            </select>
+            <input type="number" name="de" value="{{ filters.de }}" class="input" placeholder="Depuis" min="1949" max="2100" style="max-width:110px" aria-label="Depuis l'année">
+            <input type="number" name="a" value="{{ filters.a }}" class="input" placeholder="Jusqu'à" min="1949" max="2100" style="max-width:110px" aria-label="Jusqu'à l'année">
+            <select name="sort" class="select" aria-label="Trier">
+                {% for key, label in {recent: 'Plus récents', old: 'Plus anciens', parts: 'Plus de pièces', name: 'Nom'} %}
+                    <option value="{{ key }}" {{ filters.sort == key ? 'selected' }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <label class="check"><input type="checkbox" name="masquer" value="1" {{ filters.masquer ? 'checked' }}> Masquer ceux que j'ai déjà</label>
+            <label class="check"><input type="checkbox" name="tous" value="1" {{ not vehiclesOnly ? 'checked' }}> Inclure les non-véhicules</label>
+            <button class="btn">Filtrer</button>
+        </form>
+
+        {% if total == 0 %}
+            <div class="card empty"><span class="emoji">🔍</span>Aucun set ne correspond.</div>
+        {% else %}
+            <div class="set-grid">
+                {% for c in results %}
+                    {% set status = mine[c.numero] ?? null %}
+                    <div class="set-card {{ status ? 'is-' ~ status }}" id="set-{{ c.numero }}">
+                        <div class="set-thumb">
+                            {% if c.imgUrl %}<img src="{{ c.imgUrl }}" alt="{{ c.name }}" loading="lazy" referrerpolicy="no-referrer" data-fallback>{% else %}<div class="img-fallback"></div>{% endif %}
+                            {% if status == 'owned' %}<span class="badge badge-owned">🏠 Je l'ai</span>
+                            {% elseif status == 'wanted' %}<span class="badge badge-wanted">⭐ Souhaité</span>
+                            {% elseif not c.vehicle %}<span class="badge badge-reserved">Pas un véhicule</span>{% endif %}
+                        </div>
+                        <div class="set-body">
+                            <span class="set-num">{{ c.numero }}</span>
+                            <a class="set-name" href="https://rebrickable.com/sets/{{ c.setNum|url_encode }}/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">{{ c.name }}</a>
+                            <span class="set-meta">
+                                <span>{{ c.theme }}</span>
+                                {% if c.year %}<span>{{ c.year }}</span>{% endif %}
+                                {% if c.parts %}<span>{{ c.parts|number_format(0, ',', ' ') }} pcs</span>{% endif %}
+                            </span>
+                            {% if status != 'owned' %}
+                                <form method="post" action="{{ path('admin_catalog_add') }}" class="row" style="margin-top:10px;gap:6px">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('catalog_add') }}">
+                                    <input type="hidden" name="numero" value="{{ c.numero }}">
+                                    <button class="btn btn-green btn-sm grow" name="owned" value="1">🏠 Je l'ai</button>
+                                    {% if status != 'wanted' %}<button class="btn btn-yellow btn-sm grow" name="owned" value="0">⭐ Je le veux</button>{% endif %}
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if pages > 1 %}
+                <nav class="row" style="justify-content:center" aria-label="Pages">
+                    {% if page > 1 %}<a class="btn btn-ghost" href="{{ path('admin_catalog', filters|merge({page: page - 1})) }}">← Précédent</a>{% endif %}
+                    <span class="muted">Page {{ page }} / {{ pages }}</span>
+                    {% if page < pages %}<a class="btn btn-ghost" href="{{ path('admin_catalog', filters|merge({page: page + 1})) }}">Suivant →</a>{% endif %}
+                </nav>
+            {% endif %}
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

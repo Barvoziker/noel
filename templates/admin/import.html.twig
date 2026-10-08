@@ -1,0 +1,62 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Import{% endblock %}
+
+{% block body %}
+<div class="stack">
+    <h1>Importer des sets</h1>
+
+    {% if report %}
+        <div class="card stack">
+            <h2>Résultat</h2>
+            {% if report.added is not empty %}
+                <div class="alert alert-success">✓ {{ report.added|length }} set{{ report.added|length > 1 ? 's' }} ajouté{{ report.added|length > 1 ? 's' }}</div>
+                <details class="help"><summary>Détail</summary><ul class="steps">{% for l in report.added %}<li>{{ l }}</li>{% endfor %}</ul></details>
+            {% endif %}
+            {% if report.skipped is not empty %}
+                <div class="alert alert-info">{{ report.skipped|length }} ignoré{{ report.skipped|length > 1 ? 's' }} : {{ report.skipped|join(', ') }}</div>
+            {% endif %}
+            {% for e in report.errors %}
+                <div class="alert alert-error">{{ e }}</div>
+            {% endfor %}
+            {% if report.truncated %}
+                <div class="alert alert-warning">Seules les 300 premières lignes ont été traitées : relance l'import avec la suite.</div>
+            {% endif %}
+            {% if report.added is empty and report.skipped is empty and report.errors is empty %}
+                <div class="alert alert-info">Aucune ligne exploitable.</div>
+            {% endif %}
+            <a href="{{ path('admin_sets', {sort: 'recent'}) }}" class="btn">Voir mes sets</a>
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="card stack">
+        <input type="hidden" name="_token" value="{{ csrf_token('import') }}">
+
+        <div class="field">
+            <label for="lines">Un set par ligne</label>
+            <textarea id="lines" name="lines" class="input mono" rows="10" placeholder="42143&#10;75192;Millennium Falcon;Star Wars;2017&#10;10497;Galaxy Explorer;Icons;2022;non"></textarea>
+            <small>
+                Format : <code>numéro;nom;thème;année;possédé</code>. Seul le numéro est obligatoire.
+                {% if catalogEnabled %}Sans nom, les infos sont récupérées automatiquement sur Rebrickable.
+                {% else %}Sans nom (et sans clé Rebrickable), le set s'appellera « Set 42143 ».{% endif %}
+            </small>
+        </div>
+
+        <div class="field">
+            <label for="file">… ou un fichier CSV</label>
+            <input type="file" id="file" name="file" accept=".csv,.txt,text/csv,text/plain" class="input">
+            <small>L'export CSV de cette appli se réimporte tel quel.</small>
+        </div>
+
+        <div class="field">
+            <span class="label">Si la colonne « possédé » est vide</span>
+            <div class="segmented">
+                <label><input type="radio" name="default_status" value="owned" checked><span>🏠 Je les ai</span></label>
+                <label><input type="radio" name="default_status" value="wanted"><span>⭐ Je les veux</span></label>
+            </div>
+        </div>
+
+        <div><button class="btn btn-green btn-lg">⬆ Importer</button></div>
+    </form>
+</div>
+{% endblock %}
