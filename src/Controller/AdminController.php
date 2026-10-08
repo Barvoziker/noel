@@ -253,6 +253,18 @@ class AdminController extends AbstractController
         ]);
     }
 
+    #[Route('/catalogue/set/{numero}', name: 'admin_catalog_show', methods: ['GET'])]
+    public function catalogShow(string $numero, CatalogSetRepository $catalogRepository): Response
+    {
+        $item = $catalogRepository->findOneByNumero($numero) ?? throw $this->createNotFoundException('Set introuvable dans le catalogue.');
+        $mine = $this->setRepository->findOneByNumero($item->getNumero());
+        if ($mine && $this->isGiverSecret($mine)) {
+            $mine = null;
+        }
+
+        return $this->render('admin/catalog_show.html.twig', ['item' => $item, 'mine' => $mine]);
+    }
+
     #[Route('/catalogue/ajouter', name: 'admin_catalog_add', methods: ['POST'])]
     public function catalogAdd(Request $request): Response
     {

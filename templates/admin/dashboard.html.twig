@@ -92,7 +92,7 @@
                         <div class="set-thumb">{% if c.imgUrl %}<img src="{{ c.imgUrl }}" alt="{{ c.name }}" loading="lazy" referrerpolicy="no-referrer" data-fallback>{% endif %}</div>
                         <div class="set-body">
                             <span class="set-num">{{ c.numero }}</span>
-                            <span class="set-name">{{ c.name }}</span>
+                            <a class="set-name" href="{{ path('admin_catalog_show', {numero: c.numero}) }}" style="color:inherit;text-decoration:none">{{ c.name }}</a>
                             <span class="set-meta"><span>{{ c.theme }}</span><span>{{ c.year }}</span></span>
                             <form method="post" action="{{ path('admin_catalog_add') }}" class="row" style="margin-top:10px;gap:6px">
                                 <input type="hidden" name="_token" value="{{ csrf_token('catalog_add') }}">

@@ -61,14 +61,14 @@
                     {% set status = mine[c.numero] ?? null %}
                     <div class="set-card {{ status ? 'is-' ~ status }}" id="set-{{ c.numero }}">
                         <div class="set-thumb">
-                            {% if c.imgUrl %}<img src="{{ c.imgUrl }}" alt="{{ c.name }}" loading="lazy" referrerpolicy="no-referrer" data-fallback>{% else %}<div class="img-fallback"></div>{% endif %}
+                            <a href="{{ path('admin_catalog_show', {numero: c.numero}) }}" aria-label="{{ c.name }}" style="position:absolute;inset:0">{% if c.imgUrl %}<img src="{{ c.imgUrl }}" alt="{{ c.name }}" loading="lazy" referrerpolicy="no-referrer" data-fallback>{% else %}<div class="img-fallback"></div>{% endif %}</a>
                             {% if status == 'owned' %}<span class="badge badge-owned">🏠 Je l'ai</span>
                             {% elseif status == 'wanted' %}<span class="badge badge-wanted">⭐ Souhaité</span>
                             {% elseif not c.vehicle %}<span class="badge badge-reserved">Pas un véhicule</span>{% endif %}
                         </div>
                         <div class="set-body">
                             <span class="set-num">{{ c.numero }}</span>
-                            <a class="set-name" href="https://rebrickable.com/sets/{{ c.setNum|url_encode }}/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">{{ c.name }}</a>
+                            <a class="set-name" href="{{ path('admin_catalog_show', {numero: c.numero}) }}" style="color:inherit;text-decoration:none">{{ c.name }}</a>
                             <span class="set-meta">
                                 <span>{{ c.theme }}</span>
                                 {% if c.year %}<span>{{ c.year }}</span>{% endif %}

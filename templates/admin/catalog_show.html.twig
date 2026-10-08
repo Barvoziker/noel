@@ -1,0 +1,49 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ item.numero }} · {{ item.name }}{% endblock %}
+
+{% block body %}
+<div class="stack">
+    <a href="{{ path('admin_catalog') }}" class="btn btn-ghost btn-sm" onclick="if (document.referrer.indexOf('/admin/catalogue') !== -1) { history.back(); return false; }">← Catalogue</a>
+
+    <div class="detail">
+        <div class="detail-img">
+            {% if item.imgUrl %}<img src="{{ item.imgUrl }}" alt="{{ item.name }}" referrerpolicy="no-referrer" data-fallback>{% else %}<div class="img-fallback"></div>{% endif %}
+        </div>
+
+        <div class="card">
+            <div class="row">
+                {% if mine and mine.owned %}<span class="badge badge-owned">🏠 Dans ta collection</span>
+                {% elseif mine %}<span class="badge badge-wanted">⭐ Dans tes souhaits</span>{% endif %}
+                {% if not item.vehicle %}<span class="badge badge-reserved">Pas un véhicule</span>{% endif %}
+            </div>
+            <h1 class="mt">{{ item.name }}</h1>
+
+            <dl class="facts">
+                <dt>Numéro</dt><dd class="mono">{{ item.numero }}</dd>
+                {% if item.themePath %}<dt>Thème</dt><dd>{{ item.themePath }}</dd>{% endif %}
+                {% if item.year %}<dt>Année</dt><dd>{{ item.year }}</dd>{% endif %}
+                {% if item.parts %}<dt>Pièces</dt><dd>{{ item.parts|number_format(0, ',', ' ') }}</dd>{% endif %}
+            </dl>
+
+            {% if not mine or not mine.owned %}
+                <form method="post" action="{{ path('admin_catalog_add') }}" class="row">
+                    <input type="hidden" name="_token" value="{{ csrf_token('catalog_add') }}">
+                    <input type="hidden" name="numero" value="{{ item.numero }}">
+                    <button class="btn btn-green btn-lg grow" name="owned" value="1">🏠 Je l'ai</button>
+                    {% if not mine %}<button class="btn btn-yellow btn-lg grow" name="owned" value="0">⭐ Je le veux</button>{% endif %}
+                </form>
+            {% endif %}
+            {% if mine %}
+                <p class="mt"><a href="{{ path('admin_sets_edit', {id: mine.id}) }}">Modifier ce set (priorité, prix, note…) →</a></p>
+            {% endif %}
+
+            <p class="row mt">
+                <a href="https://www.lego.com/fr-fr/product/{{ item.numero|url_encode }}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">LEGO.com ↗</a>
+                <a href="https://brickset.com/sets/{{ item.setNum|url_encode }}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">Brickset ↗</a>
+                <a href="https://rebrickable.com/sets/{{ item.setNum|url_encode }}/" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">Rebrickable ↗</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
